@@ -1,0 +1,34 @@
+# Default [censor] patterns copied into the config by setup.sh.
+# Edit this file to change what new installs start with.
+# Same syntax as the [censor] section: globs, or POSIX ERE between slashes.
+# Matching is case-insensitive.
+
+# Private key blocks (PEM, OpenSSH)
+/-----begin [a-z ]*private key-----/
+
+# AWS access key IDs and secret keys
+/akia[0-9a-z]{16}/
+/aws_secret_access_key[[:space:]]*[:=]/
+
+# GitHub tokens
+/gh[pousr]_[a-z0-9]{36}/
+/github_pat_[a-z0-9_]{20,}/
+
+# Slack tokens
+/xox[baprs]-[a-z0-9-]{10,}/
+
+# OpenAI / Anthropic style API keys (sk-..., sk-ant-..., sk-proj-...)
+/sk-[a-z0-9]{20,}/
+/sk-(ant|proj|svcacct|admin)-[a-z0-9_-]{20,}/
+
+# Google API keys
+/aiza[0-9a-z_-]{35}/
+
+# Credentials inside URLs: a scheme, then user:password@ before the host
+/://[^/[:space:]:@]+:[^/[:space:]@]+@/
+
+# Secrets assigned as quoted literals (password = "...")
+/(password|passwd|secret|api[_-]?key|access[_-]?token)[[:space:]]*[:=][[:space:]]*["'][^"']{6,}["']/
+
+# Claude co-author trailers added to commit messages
+/co-authored-by:[[:space:]]*claude.*/
