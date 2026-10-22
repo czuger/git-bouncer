@@ -1,8 +1,8 @@
 # git-bouncer
 
 Git hooks (POSIX shell) that check who is committing and keep secrets out of
-your commits. They are driven by a `.git-bouncer-config` file at the
-repository root, or by a global config written by `setup.sh`.
+your commits. They are driven by a global config,
+`~/.config/git-bouncer/config`, written by `setup.sh`.
 
 - **Author check** (pre-commit): if the repository has no local
   `user.name` / `user.email`, you pick an identity from a list before you can commit.
@@ -52,8 +52,6 @@ repository root, or by a global config written by `setup.sh`.
 
 With a global installation:
 
-- A repository's own `.git-bouncer-config`, if there is one, is used instead
-  of the global config (it is not merged with it).
 - A repository that sets its own `core.hooksPath` (for example husky, or the
   per-repository installation below) keeps it, because the local setting wins.
 - A global `core.hooksPath` makes git ignore `.git/hooks/`. To keep existing
@@ -73,8 +71,8 @@ configs. It uses the same syntax as `[censor]` and must not contain `[section]` 
 
 ### Per-repository installation
 
-Copy `.githooks/` and `.git-bouncer-config` into your repository, then enable
-the hooks (once per clone):
+Copy `.githooks/` into your repository, then enable the hooks (once per clone).
+They still read the global `~/.config/git-bouncer/config`:
 
 ```sh
 git config core.hooksPath .githooks
@@ -98,6 +96,9 @@ The wrappers call the script through `sh` and do not use symlinks, so they also
 work with Git for Windows.
 
 ## Configuration
+
+The config is `~/.config/git-bouncer/config` (or
+`$XDG_CONFIG_HOME/git-bouncer/config`). There is no per-repository config.
 
 ```ini
 # Lines starting with # and blank lines are ignored.
@@ -170,8 +171,7 @@ git-bouncer: commit blocked, staged changes match censored patterns:
   src/db.js:3: matches *password*
 ```
 
-`.git-bouncer-config` itself is never checked. To commit anyway, use
-`git commit --no-verify`.
+To commit anyway, use `git commit --no-verify`.
 
 ### Message censoring
 

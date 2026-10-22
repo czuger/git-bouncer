@@ -238,7 +238,7 @@ write_config() {
     tmpfiles="$tmpfiles $tmp"
     {
         printf '# git-bouncer configuration, written by setup.sh on %s.\n' "$(date +%Y-%m-%d)"
-        printf '# Used by every repository that has no .git-bouncer-config of its own.\n'
+        printf '# Used by every repository.\n'
         printf '# One entry per line. Blank lines and lines starting with # are ignored.\n\n'
         printf '[authors]\n'
         printf '# Offered as a menu when no local user.name / user.email is set.\n'

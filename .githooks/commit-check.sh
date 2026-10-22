@@ -1,6 +1,6 @@
 #!/bin/sh
-# git-bouncer: commit author check and pattern censoring, driven by
-# .git-bouncer-config at the repository root.
+# git-bouncer: commit author check and pattern censoring, driven by the
+# global config ~/.config/git-bouncer/config (written by setup.sh).
 #
 # Usage (from the hook wrappers):
 #   commit-check.sh pre-commit
@@ -13,11 +13,7 @@ export LC_ALL
 hook=${1:-}
 [ $# -gt 0 ] && shift
 
-top=$(git rev-parse --show-toplevel) || exit 1
-config_name=.git-bouncer-config
-# A config file in the repository replaces the global one written by setup.sh.
-config="$top/$config_name"
-[ -f "$config" ] || config="${XDG_CONFIG_HOME:-${HOME:-}/.config}/git-bouncer/config"
+config="${XDG_CONFIG_HOME:-${HOME:-}/.config}/git-bouncer/config"
 tab=$(printf '\t')
 
 say() { printf 'git-bouncer: %s\n' "$*" >&2; }
@@ -196,7 +192,7 @@ scan_staged() {
     report=$(
         git diff --cached --no-color --no-ext-diff -U0 --diff-filter=ACMR \
             --src-prefix=a/ --dst-prefix=b/ |
-        awk -v pfile="$pfile" -v cfg="$config_name" "$AWK_PATTERNS"'
+        awk -v pfile="$pfile" "$AWK_PATTERNS"'
             BEGIN { load_patterns() }
             /^diff --git / { header = 1; next }
             header && /^\+\+\+ / {
@@ -216,14 +212,12 @@ scan_staged() {
             }
             header { next }
             /^\+/ {
-                if (file != cfg) {
-                    text = tolower(substr($0, 2))
-                    for (i = 1; i <= np; i++)
-                        if (match(text, rx[i])) {
-                            printf "  %s:%d: matches %s\n", file, ln, pat[i]
-                            hits++
-                        }
-                }
+                text = tolower(substr($0, 2))
+                for (i = 1; i <= np; i++)
+                    if (match(text, rx[i])) {
+                        printf "  %s:%d: matches %s\n", file, ln, pat[i]
+                        hits++
+                    }
                 ln++
             }
             END { exit hits > 0 }
@@ -232,7 +226,7 @@ scan_staged() {
     case $? in
         0) return 0 ;;
         1) ;;
-        *) die "could not scan the staged changes (check the [censor] patterns in $config_name)" ;;
+        *) die "could not scan the staged changes (check the [censor] patterns in $config)" ;;
     esac
 
     say "commit blocked, staged changes match censored patterns:"
@@ -275,7 +269,7 @@ censor_message() {
             }
             print line
         }
-    ' "$msg" >"$out" || die "could not censor the commit message (check the [censor] patterns in $config_name)"
+    ' "$msg" >"$out" || die "could not censor the commit message (check the [censor] patterns in $config)"
 
     cmp -s "$out" "$msg" || cat "$out" >"$msg"
 }
