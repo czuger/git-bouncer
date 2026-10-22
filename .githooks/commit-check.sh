@@ -258,7 +258,7 @@ censor_message() {
                 rest = line
                 n = 0
                 while (rest != "" && match(tolower(rest), rx[i])) {
-                    out = out substr(rest, 1, RSTART - 1) "***"
+                    out = out substr(rest, 1, RSTART - 1)
                     rest = substr(rest, RSTART + RLENGTH)
                     n++
                 }

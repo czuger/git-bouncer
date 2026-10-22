@@ -1,5 +1,25 @@
 # git-bouncer
 
+> **Every commit gets checked at the door: the right name on it, and no secrets inside.**
+
+Ever pushed a commit with your personal email to a work project, or the other way
+around? Ever committed a password or an API key by accident? Both mistakes are easy to
+make and hard to undo, because once something is in a repository's history it tends to
+stay there. Bonus: it removes that “Co-Authored-By:” trailer you’ve been desperately trying to avoid, by default.
+
+git-bouncer stands at the door of every commit and checks two things:
+
+- **Who you are.** In a new repository, it asks which identity to use instead of
+  quietly picking one for you, so work and personal projects stay separate.
+- **What you bring in.** If your changes contain something that looks like a password,
+  a key or a token, it stops the commit and shows you where it is, before the secret
+  ever leaves your machine. Secrets in commit messages are removed automatically.
+
+You install it once, it works in all your repositories, and it stays out of the way
+until it is needed. No server, no account, nothing to run in the background.
+
+## How it works
+
 POSIX-shell git hooks that check who is committing and keep secrets out of commits.
 They read one global config: `~/.config/git-bouncer/config` (or `$XDG_CONFIG_HOME/git-bouncer/config`).
 
@@ -10,7 +30,7 @@ They read one global config: `~/.config/git-bouncer/config` (or `$XDG_CONFIG_HOM
 - **Content check** (pre-commit): blocks the commit if a line *added* in the staged
   diff matches a censored pattern. Reports file, line and pattern, never the matched
   text. Files are never modified. Bypass with `git commit --no-verify`.
-- **Message censoring** (commit-msg): replaces every match in the message with `***`.
+- **Message censoring** (commit-msg): removes every match from the message.
   Never blocks, needs no terminal.
 
 ```
