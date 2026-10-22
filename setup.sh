@@ -1,7 +1,8 @@
 #!/bin/sh
 # git-bouncer setup: install the hooks for every repository (global
 # core.hooksPath) and write a global config, prefilled with committers found
-# in existing repositories and with the default censor patterns.
+# in existing repositories and with the default censor patterns. Then offer to
+# remove the global user.name / user.email.
 #
 # Usage: see usage() below, or run "setup.sh --help".
 
@@ -249,6 +250,39 @@ write_config() {
     say "config written to $config (edit it at any time)"
 }
 
+# --- global identity -------------------------------------------------------
+
+# The author check asks for an identity in each repository, so a global
+# user.name / user.email is not needed. Where the hooks do not run (--no-verify,
+# a repository with its own core.hooksPath), git would use it without asking.
+# Offer to remove it.
+check_global_identity() {
+    gname=$(git config --global user.name 2>/dev/null)
+    gemail=$(git config --global user.email 2>/dev/null)
+    [ -n "$gname$gemail" ] || return 0
+
+    printf '\nA global git identity is set:\n' >/dev/tty
+    [ -n "$gname" ] && printf '  user.name  = %s\n' "$gname" >/dev/tty
+    [ -n "$gemail" ] && printf '  user.email = %s\n' "$gemail" >/dev/tty
+    printf 'git-bouncer asks for an identity in each repository instead. Where the\n' >/dev/tty
+    printf 'hooks do not run (--no-verify, own core.hooksPath), git commits with it silently.\n' >/dev/tty
+    confirm "Remove the global user.name / user.email? [y/N] " n || {
+        say "kept the global git identity."
+        return 0
+    }
+
+    for key in user.name user.email; do
+        [ -n "$(git config --global "$key" 2>/dev/null)" ] || continue
+        git config --global --unset-all "$key" || say "could not unset the global $key"
+        left=$(git config --global --show-origin "$key" 2>/dev/null) &&
+            say "the global $key is still set: $left"
+    done
+    say "removed the global git identity. To restore it:"
+    [ -n "$gname" ] && printf '  git config --global user.name "%s"\n' "$gname" >&2
+    [ -n "$gemail" ] && printf '  git config --global user.email "%s"\n' "$gemail" >&2
+    return 0
+}
+
 # --- main ------------------------------------------------------------------
 
 if [ -n "$uninstall" ]; then
@@ -264,20 +298,19 @@ has_tty || die "setup.sh asks questions and must be run from a terminal."
 
 install_hooks
 
-if [ -f "$config" ]; then
-    confirm "Overwrite the existing config $config? [y/N] " n || {
-        say "kept the existing config."
-        exit 0
-    }
+if [ -f "$config" ] && ! confirm "Overwrite the existing config $config? [y/N] " n; then
+    say "kept the existing config."
+else
+    if [ -z "$scan_dirs" ]; then
+        ask "Directory to scan for committers (empty to skip): " || die "aborted"
+        case $answer in
+            '~'|'~/'*) answer=${HOME:-}${answer#'~'} ;;
+        esac
+        [ -n "$answer" ] && scan_dirs="$answer$nl"
+    fi
+
+    choose_authors
+    write_config
 fi
 
-if [ -z "$scan_dirs" ]; then
-    ask "Directory to scan for committers (empty to skip): " || die "aborted"
-    case $answer in
-        '~'|'~/'*) answer=${HOME:-}${answer#'~'} ;;
-    esac
-    [ -n "$answer" ] && scan_dirs="$answer$nl"
-fi
-
-choose_authors
-write_config
+check_global_identity
